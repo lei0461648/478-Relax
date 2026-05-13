@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4-7-8 Breathing Timer | Relax & Sleep</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0a0a12 0%, #0d0d1a 50%, #080810 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #e8e8ec;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 星空背景 */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* 主容器 */
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      padding: 40px;
+    }
+
+    /* 呼吸圆容器 */
+    .breathing-wrapper {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 外层光晕 */
+    .outer-glow {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(100, 140, 180, 0.15) 0%, transparent 70%);
+      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    }
+
+    /* 主呼吸圆 */
+    .breathing-circle {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(120, 160, 200, 0.25) 0%, rgba(80, 120, 160, 0.15) 50%, rgba(60, 100, 140, 0.08) 100%);
+      box-shadow: 
+        0 0 60px rgba(100, 140, 180, 0.2),
+        0 0 120px rgba(80, 120, 160, 0.1),
+        inset 0 0 40px rgba(140, 180, 220, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s linear;
+    }
+
+    .breathing-circle.active {
+      box-shadow: 
+        0 0 80px rgba(100, 140, 180, 0.3),
+        0 0 160px rgba(80, 120, 160, 0.15),
+        inset 0 0 60px rgba(140, 180, 220, 0.15);
+    }
+
+    /* 状态文字 */
+    .phase-text {
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: 4px;
+      color: rgba(200, 220, 240, 0.9);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* 倒计时 */
+    .countdown {
+      font-size: 42px;
+      font-weight: 200;
+      color: rgba(220, 235, 250, 0.95);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 底部控制区 */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* 开始/停止按钮 */
+    .control-btn {
+      padding: 14px 48px;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      color: rgba(220, 235, 250, 0.9);
+      background: rgba(100, 140, 180, 0.12);
+      border: none;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .control-btn:hover {
+      background: rgba(100, 140, 180, 0.2);
+      transform: scale(1.02);
+    }
+
+    .control-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 提示文字 */
+    .hint {
+      font-size: 13px;
+      color: rgba(160, 170, 180, 0.6);
+      letter-spacing: 1px;
+    }
+
+    .hint.hidden {
+      opacity: 0;
+    }
+
+    /* 周期指示器 */
+    .cycle-indicator {
+      position: fixed;
+      bottom: 40px;
+      font-size: 12px;
+      color: rgba(140, 150, 160, 0.5);
+      letter-spacing: 1px;
+    }
+
+    /* 环境白噪音 — 音量 / 静音 */
+    .ambient-mute {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: rgba(100, 140, 180, 0.1);
+      color: rgba(180, 200, 220, 0.65);
+      cursor: pointer;
+      transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+      backdrop-filter: blur(8px);
+    }
+
+    .ambient-mute:hover {
+      background: rgba(100, 140, 180, 0.18);
+      color: rgba(200, 220, 240, 0.9);
+    }
+
+    .ambient-mute:active {
+      transform: scale(0.94);
+    }
+
+    .ambient-mute svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .ambient-mute svg path:first-child {
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .ambient-mute svg path:not(:first-child) {
+      fill: none;
+      stroke: currentColor;
+    }
+
+    .ambient-mute .icon-muted {
+      display: none;
+    }
+
+    .ambient-mute.is-muted {
+      color: rgba(140, 150, 165, 0.45);
+    }
+
+    .ambient-mute.is-muted .icon-unmuted {
+      display: none;
+    }
+
+    .ambient-mute.is-muted .icon-muted {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <button type="button" class="ambient-mute" id="ambientMuteBtn" aria-label="Mute ambient sound" title="Mute / unmute">
+    <svg class="icon-unmuted" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+      <path d="M15.5 8.5a5 5 0 010 7"/>
+      <path d="M18 6a8 8 0 010 12"/>
+    </svg>
+    <svg class="icon-muted" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M11 5L6 9H3v6h3l5 4V5z"/>
+      <path d="M16 9l5 5M21 9l-5 5"/>
+    </svg>
+  </button>
+  
+  <div class="container">
+    <div class="breathing-wrapper">
+      <div class="outer-glow" id="outerGlow"></div>
+      <div class="breathing-circle" id="breathingCircle">
+        <span class="phase-text" id="phaseText">Ready</span>
+        <span class="countdown" id="countdown">4</span>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <button class="control-btn" id="controlBtn">Start</button>
+      <span class="hint" id="hint">Click to start 4-7-8 breathing</span>
+    </div>
+  </div>
+  
+  <div class="cycle-indicator" id="cycleIndicator"></div>
+
+  <script>
+    // ========== 星空背景 ==========
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      const count = Math.floor((canvas.width * canvas.height) / 8000);
+      stars = [];
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.2 + 0.3,
+          opacity: Math.random() * 0.6 + 0.2,
+          twinkleSpeed: Math.random() * 0.02 + 0.005,
+          twinklePhase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const time = Date.now() * 0.001;
+      
+      stars.forEach(star => {
+        const twinkle = Math.sin(time * star.twinkleSpeed * 10 + star.twinklePhase) * 0.3 + 0.7;
+        const alpha = star.opacity * twinkle;
+        
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 210, 230, ${alpha})`;
+        ctx.fill();
+      });
+      
+      requestAnimationFrame(drawStars);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    drawStars();
+
+    // ========== 呼吸逻辑 ==========
+    const breathingCircle = document.getElementById('breathingCircle');
+    const outerGlow = document.getElementById('outerGlow');
+    const phaseText = document.getElementById('phaseText');
+    const countdown = document.getElementById('countdown');
+    const controlBtn = document.getElementById('controlBtn');
+    const hint = document.getElementById('hint');
+    const cycleIndicator = document.getElementById('cycleIndicator');
+    const ambientMuteBtn = document.getElementById('ambientMuteBtn');
+
+    const AMBIENT_URL = 'https://cdn.pixabay.com/download/audio/2022/02/22/audio_d1718ab41b.mp3';
+    const ambientAudio = new Audio(AMBIENT_URL);
+    ambientAudio.loop = true;
+    ambientAudio.volume = 0.35;
+
+    function syncMuteUi() {
+      const muted = ambientAudio.muted;
+      ambientMuteBtn.classList.toggle('is-muted', muted);
+      ambientMuteBtn.setAttribute('aria-label', muted ? 'Unmute ambient sound' : 'Mute ambient sound');
+      ambientMuteBtn.setAttribute('title', muted ? 'Unmute' : 'Mute');
+    }
+
+    ambientMuteBtn.addEventListener('click', () => {
+      ambientAudio.muted = !ambientAudio.muted;
+      syncMuteUi();
+    });
+
+    syncMuteUi();
+
+    let isRunning = false;
+    let currentPhase = 0; // 0: 吸气, 1: 屏息, 2: 呼气
+    let timeLeft = 4;
+    let cycleCount = 0;
+    let intervalId = null;
+    let animationId = null;
+
+    const phases = [
+      { name: 'Inhale', duration: 4, scaleStart: 1, scaleEnd: 1.4 },
+      { name: 'Hold', duration: 7, scaleStart: 1.4, scaleEnd: 1.4 },
+      { name: 'Exhale', duration: 8, scaleStart: 1.4, scaleEnd: 1 }
+    ];
+
+    function updateDisplay() {
+      const phase = phases[currentPhase];
+      phaseText.textContent = phase.name;
+      countdown.textContent = timeLeft;
+      
+      // 计算当前缩放比例
+      const elapsed = phase.duration - timeLeft;
+      const progress = elapsed / phase.duration;
+      const scale = phase.scaleStart + (phase.scaleEnd - phase.scaleStart) * progress;
+      
+      breathingCircle.style.transform = `scale(${scale})`;
+      outerGlow.style.transform = `scale(${scale * 1.1})`;
+      outerGlow.style.opacity = scale > 1.2 ? 0.8 : 0.5;
+      
+      if (cycleCount > 0) {
+        cycleIndicator.textContent = `Cycle ${cycleCount}`;
+      }
+    }
+
+    function smoothAnimate() {
+      if (!isRunning) return;
+      
+      const phase = phases[currentPhase];
+      const now = Date.now();
+      const phaseStartTime = now - (phase.duration - timeLeft) * 1000;
+      
+      function animate() {
+        if (!isRunning) return;
+        
+        const elapsed = (Date.now() - phaseStartTime) / 1000;
+        const progress = Math.min(elapsed / phase.duration, 1);
+        const scale = phase.scaleStart + (phase.scaleEnd - phase.scaleStart) * easeInOutCubic(progress);
+        
+        breathingCircle.style.transform = `scale(${scale})`;
+        outerGlow.style.transform = `scale(${scale * 1.1})`;
+        outerGlow.style.opacity = scale > 1.2 ? 0.8 : 0.5;
+        
+        if (progress < 1) {
+          animationId = requestAnimationFrame(animate);
+        }
+      }
+      
+      animate();
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function tick() {
+      timeLeft--;
+      
+      if (timeLeft <= 0) {
+        currentPhase = (currentPhase + 1) % 3;
+        timeLeft = phases[currentPhase].duration;
+        
+        if (currentPhase === 0) {
+          cycleCount++;
+        }
+        
+        smoothAnimate();
+      }
+      
+      updateDisplay();
+    }
+
+    function start() {
+      isRunning = true;
+      currentPhase = 0;
+      timeLeft = phases[0].duration;
+      cycleCount = 1;
+      
+      breathingCircle.classList.add('active');
+      controlBtn.textContent = 'Stop';
+      hint.classList.add('hidden');
+      
+      updateDisplay();
+      smoothAnimate();
+      intervalId = setInterval(tick, 1000);
+
+      ambientAudio.play().catch(() => {});
+    }
+
+    function stop() {
+      isRunning = false;
+      
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      
+      breathingCircle.classList.remove('active');
+      breathingCircle.style.transform = 'scale(1)';
+      outerGlow.style.transform = 'scale(1.1)';
+      outerGlow.style.opacity = '0.5';
+      
+      phaseText.textContent = 'Ready';
+      countdown.textContent = '4';
+      controlBtn.textContent = 'Start';
+      hint.classList.remove('hidden');
+      cycleIndicator.textContent = '';
+
+      ambientAudio.pause();
+      ambientAudio.currentTime = 0;
+    }
+
+    controlBtn.addEventListener('click', () => {
+      if (isRunning) {
+        stop();
+      } else {
+        start();
+      }
+    });
+
+    // 空格键控制
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        controlBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
