@@ -232,6 +232,98 @@
       opacity: 0;
     }
 
+    /*
+     * 竖屏手机：vmin ≈ 屏宽，圆环只按宽度长，相对屏高会显得过小。
+     * 用 vh 参与限制，让圆环在纵向也占足够比例，接近 PC 端视觉权重。
+     */
+    @media (max-width: 768px) and (orientation: portrait) {
+      .container {
+        gap: clamp(10px, 2.2vh, 22px);
+        padding: clamp(6px, 1.5vh, 14px) clamp(10px, 3.5vw, 20px);
+        justify-content: center;
+      }
+
+      .breathing-wrapper {
+        width: min(92vw, 58vh, 380px);
+        height: min(92vw, 58vh, 380px);
+      }
+
+      .breathing-circle {
+        width: min(64vw, 40vh, 260px);
+        height: min(64vw, 40vh, 260px);
+        border-width: max(3px, 0.55vmin);
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.45),
+          0 0 32px rgba(56, 189, 248, 0.42),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+
+      .breathing-circle.active {
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.5),
+          0 0 44px rgba(56, 189, 248, 0.52),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .phase-text {
+        font-size: clamp(15px, 4.2vmin, 20px);
+        letter-spacing: 0.2em;
+      }
+
+      .countdown {
+        font-size: clamp(34px, 11vmin, 56px);
+      }
+
+      .controls {
+        gap: clamp(10px, 2vh, 14px);
+      }
+
+      .control-btn {
+        padding: clamp(12px, 3vh, 16px) clamp(36px, 12vw, 52px);
+        font-size: clamp(14px, 3.8vmin, 16px);
+      }
+
+      .hint {
+        font-size: clamp(12px, 3.2vmin, 14px);
+        max-width: 88vw;
+      }
+
+      .ambient-mute {
+        width: 44px;
+        height: 44px;
+      }
+
+      .ambient-mute svg {
+        width: 22px;
+        height: 22px;
+      }
+    }
+
+    @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+      .container {
+        gap: clamp(6px, 1.8vh, 12px);
+        padding: clamp(4px, 1vh, 10px) clamp(10px, 3vw, 16px);
+      }
+
+      .breathing-wrapper {
+        width: min(44vh, 52vw);
+        height: min(44vh, 52vw);
+      }
+
+      .breathing-circle {
+        width: min(30vh, 36vw);
+        height: min(30vh, 36vw);
+      }
+
+      .countdown {
+        font-size: clamp(26px, 8vmin, 40px);
+      }
+
+      .controls {
+        gap: 8px;
+      }
+    }
+
     /* 周期指示器 */
     .cycle-indicator {
       position: fixed;
