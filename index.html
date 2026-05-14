@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050508">
   <title>4-7-8 Breathing Timer | Relax & Sleep</title>
   <style>
     * {
@@ -11,16 +12,27 @@
       box-sizing: border-box;
     }
 
-    body {
-      min-height: 100vh;
-      background: linear-gradient(180deg, #0a0a12 0%, #0d0d1a 50%, #080810 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #e8e8ec;
+    html {
+      height: 100%;
       overflow: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      min-height: 100svh;
+      background: linear-gradient(165deg, #030308 0%, #06060f 45%, #020206 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #eef0f5;
+      overflow: hidden;
+      touch-action: manipulation;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
     }
 
     /* 星空背景 */
@@ -30,10 +42,12 @@
       left: 0;
       width: 100%;
       height: 100%;
+      height: 100dvh;
+      height: 100svh;
       z-index: 0;
     }
 
-    /* 主容器 */
+    /* 主容器：一屏内排布，移动端收紧间距 */
     .container {
       position: relative;
       z-index: 1;
@@ -41,15 +55,24 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 60px;
-      padding: 40px;
+      gap: clamp(12px, 3.5vmin, 28px);
+      padding: clamp(8px, 2.5vmin, 20px) clamp(12px, 4vw, 24px);
+      width: 100%;
+      max-width: 100vw;
+      max-height: 100vh;
+      max-height: 100dvh;
+      max-height: 100svh;
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
-    /* 呼吸圆容器 */
+    /* 呼吸圆容器：按视口比例缩放，避免小屏溢出 */
     .breathing-wrapper {
       position: relative;
-      width: 280px;
-      height: 280px;
+      width: min(72vmin, 280px);
+      height: min(72vmin, 280px);
+      flex-shrink: 0;
+      overflow: visible;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -61,51 +84,105 @@
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(100, 140, 180, 0.15) 0%, transparent 70%);
-      transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.22) 0%, rgba(15, 23, 42, 0) 68%);
+      transition: opacity 0.35s ease, filter 0.35s ease;
+      pointer-events: none;
     }
 
-    /* 主呼吸圆 */
+    .outer-glow.phase-hold {
+      background: radial-gradient(circle, rgba(251, 191, 36, 0.12) 0%, transparent 70%);
+      filter: saturate(0.85);
+    }
+
+    .outer-glow.phase-exhale {
+      background: radial-gradient(circle, rgba(94, 234, 212, 0.14) 0%, transparent 72%);
+    }
+
+    /* 主呼吸圆：高对比描边 + 深色芯 */
     .breathing-circle {
       position: relative;
-      width: 180px;
-      height: 180px;
+      width: min(46vmin, 180px);
+      height: min(46vmin, 180px);
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, rgba(120, 160, 200, 0.25) 0%, rgba(80, 120, 160, 0.15) 50%, rgba(60, 100, 140, 0.08) 100%);
-      box-shadow: 
-        0 0 60px rgba(100, 140, 180, 0.2),
-        0 0 120px rgba(80, 120, 160, 0.1),
-        inset 0 0 40px rgba(140, 180, 220, 0.1);
+      border: 3px solid rgba(125, 211, 252, 0.92);
+      background:
+        radial-gradient(circle at 32% 28%, rgba(56, 189, 248, 0.18) 0%, transparent 52%),
+        radial-gradient(circle at 50% 100%, rgba(15, 23, 42, 0.95) 0%, rgba(3, 7, 18, 0.98) 100%);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.45),
+        0 0 28px rgba(56, 189, 248, 0.35),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      transition: transform 0.1s linear;
+      transition: border-color 0.35s ease, box-shadow 0.35s ease;
     }
 
     .breathing-circle.active {
-      box-shadow: 
-        0 0 80px rgba(100, 140, 180, 0.3),
-        0 0 160px rgba(80, 120, 160, 0.15),
-        inset 0 0 60px rgba(140, 180, 220, 0.15);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(56, 189, 248, 0.5),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .breathing-circle.phase-inhale {
+      border-color: rgba(56, 189, 248, 0.98);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 0 48px rgba(34, 211, 238, 0.55),
+        inset 0 0 0 1px rgba(165, 243, 252, 0.12);
+    }
+
+    .breathing-circle.phase-hold {
+      border-color: rgba(251, 191, 36, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.55),
+        0 0 36px rgba(251, 191, 36, 0.42),
+        inset 0 0 0 2px rgba(253, 224, 71, 0.1);
+      animation: hold-ring 2.2s ease-in-out infinite;
+    }
+
+    .breathing-circle.phase-exhale {
+      border-color: rgba(45, 212, 191, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.5),
+        0 0 32px rgba(45, 212, 191, 0.4),
+        inset 0 0 0 1px rgba(204, 251, 241, 0.08);
+    }
+
+    @keyframes hold-ring {
+      0%, 100% {
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.55),
+          0 0 32px rgba(251, 191, 36, 0.35),
+          inset 0 0 0 2px rgba(253, 224, 71, 0.08);
+      }
+      50% {
+        box-shadow:
+          0 0 0 1px rgba(0, 0, 0, 0.55),
+          0 0 44px rgba(251, 191, 36, 0.5),
+          inset 0 0 0 2px rgba(253, 224, 71, 0.14);
+      }
     }
 
     /* 状态文字 */
     .phase-text {
-      font-size: 18px;
-      font-weight: 300;
-      letter-spacing: 4px;
-      color: rgba(200, 220, 240, 0.9);
+      font-size: clamp(14px, 3.8vmin, 18px);
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      color: #c8e8f8;
       text-transform: uppercase;
-      margin-bottom: 8px;
+      margin-bottom: clamp(4px, 1.2vmin, 8px);
     }
 
     /* 倒计时 */
     .countdown {
-      font-size: 42px;
-      font-weight: 200;
-      color: rgba(220, 235, 250, 0.95);
+      font-size: clamp(28px, 9vmin, 42px);
+      font-weight: 250;
+      color: #f4f8fc;
       font-variant-numeric: tabular-nums;
+      line-height: 1.05;
     }
 
     /* 底部控制区 */
@@ -118,17 +195,18 @@
 
     /* 开始/停止按钮 */
     .control-btn {
-      padding: 14px 48px;
-      font-size: 15px;
-      font-weight: 400;
-      letter-spacing: 2px;
-      color: rgba(220, 235, 250, 0.9);
-      background: rgba(100, 140, 180, 0.12);
-      border: none;
+      padding: clamp(10px, 2.8vmin, 14px) clamp(32px, 10vw, 48px);
+      font-size: clamp(13px, 3.4vmin, 15px);
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      color: #e8f4fc;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(125, 211, 252, 0.45);
       border-radius: 40px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: background 0.25s ease, transform 0.2s ease, border-color 0.25s ease;
       backdrop-filter: blur(10px);
+      -webkit-tap-highlight-color: transparent;
     }
 
     .control-btn:hover {
@@ -142,9 +220,12 @@
 
     /* 提示文字 */
     .hint {
-      font-size: 13px;
-      color: rgba(160, 170, 180, 0.6);
-      letter-spacing: 1px;
+      font-size: clamp(11px, 2.8vmin, 13px);
+      color: rgba(148, 163, 184, 0.85);
+      letter-spacing: 0.06em;
+      text-align: center;
+      max-width: 90vw;
+      line-height: 1.35;
     }
 
     .hint.hidden {
@@ -154,17 +235,21 @@
     /* 周期指示器 */
     .cycle-indicator {
       position: fixed;
-      bottom: 40px;
-      font-size: 12px;
-      color: rgba(140, 150, 160, 0.5);
-      letter-spacing: 1px;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      font-size: clamp(10px, 2.6vmin, 12px);
+      color: rgba(148, 163, 184, 0.75);
+      letter-spacing: 0.08em;
+      z-index: 2;
+      pointer-events: none;
     }
 
     /* 环境白噪音 — 音量 / 静音 */
     .ambient-mute {
       position: fixed;
-      top: 20px;
-      right: 20px;
+      top: max(12px, env(safe-area-inset-top, 12px));
+      right: max(12px, env(safe-area-inset-right, 12px));
       z-index: 2;
       width: 40px;
       height: 40px;
@@ -264,8 +349,10 @@
     let stars = [];
 
     function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const w = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
       initStars();
     }
 
@@ -294,7 +381,7 @@
         
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200, 210, 230, ${alpha})`;
+        ctx.fillStyle = `rgba(186, 210, 238, ${alpha * 0.85})`;
         ctx.fill();
       });
       
@@ -302,6 +389,9 @@
     }
 
     window.addEventListener('resize', resizeCanvas);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', resizeCanvas);
+    }
     resizeCanvas();
     drawStars();
 
@@ -342,58 +432,101 @@
     let animationId = null;
 
     const phases = [
-      { name: 'Inhale', duration: 4, scaleStart: 1, scaleEnd: 1.4 },
-      { name: 'Hold', duration: 7, scaleStart: 1.4, scaleEnd: 1.4 },
-      { name: 'Exhale', duration: 8, scaleStart: 1.4, scaleEnd: 1 }
+      { key: 'inhale', name: 'Inhale', duration: 4, scaleStart: 1, scaleEnd: 1.58, ease: 'out' },
+      { key: 'hold', name: 'Hold', duration: 7, scaleStart: 1.58, scaleEnd: 1.58, ease: 'linear' },
+      { key: 'exhale', name: 'Exhale', duration: 8, scaleStart: 1.58, scaleEnd: 0.8, ease: 'in' }
     ];
+
+    function phaseWithRuntimeBounds(base) {
+      if (base.key !== 'inhale') return base;
+      var from = cycleCount <= 1 ? 1 : 0.8;
+      return { scaleStart: from, scaleEnd: 1.58, duration: base.duration, ease: base.ease, key: base.key, name: base.name };
+    }
+
+    function setPhaseVisuals(phaseKey) {
+      breathingCircle.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+      outerGlow.classList.remove('phase-hold', 'phase-exhale');
+      if (!isRunning) return;
+      breathingCircle.classList.add('phase-' + phaseKey);
+      if (phaseKey === 'hold') outerGlow.classList.add('phase-hold');
+      if (phaseKey === 'exhale') outerGlow.classList.add('phase-exhale');
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function easeInCubic(t) {
+      return t * t * t;
+    }
+
+    function applyEasing(t, ease) {
+      if (ease === 'out') return easeOutCubic(t);
+      if (ease === 'in') return easeInCubic(t);
+      return t;
+    }
 
     function updateDisplay() {
       const phase = phases[currentPhase];
       phaseText.textContent = phase.name;
       countdown.textContent = timeLeft;
-      
-      // 计算当前缩放比例
-      const elapsed = phase.duration - timeLeft;
-      const progress = elapsed / phase.duration;
-      const scale = phase.scaleStart + (phase.scaleEnd - phase.scaleStart) * progress;
-      
-      breathingCircle.style.transform = `scale(${scale})`;
-      outerGlow.style.transform = `scale(${scale * 1.1})`;
-      outerGlow.style.opacity = scale > 1.2 ? 0.8 : 0.5;
-      
+      setPhaseVisuals(phase.key);
+
+      if (!isRunning) {
+        var pb = phaseWithRuntimeBounds(phase);
+        var elapsed = pb.duration - timeLeft;
+        var progress = pb.duration ? elapsed / pb.duration : 0;
+        var eased = applyEasing(Math.min(Math.max(progress, 0), 1), pb.ease);
+        var scale = pb.scaleStart + (pb.scaleEnd - pb.scaleStart) * eased;
+        breathingCircle.style.transform = 'scale(' + scale + ')';
+        outerGlow.style.transform = 'scale(' + (scale * 1.08) + ')';
+        outerGlow.style.opacity = scale > 1.32 ? '0.78' : '0.48';
+      }
+
       if (cycleCount > 0) {
-        cycleIndicator.textContent = `Cycle ${cycleCount}`;
+        cycleIndicator.textContent = 'Cycle ' + cycleCount;
       }
     }
 
     function smoothAnimate() {
       if (!isRunning) return;
-      
-      const phase = phases[currentPhase];
+
+      if (animationId != null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      const effectivePhase = phaseWithRuntimeBounds(phases[currentPhase]);
       const now = Date.now();
-      const phaseStartTime = now - (phase.duration - timeLeft) * 1000;
-      
+      const phaseStartTime = now - (effectivePhase.duration - timeLeft) * 1000;
+
       function animate() {
         if (!isRunning) return;
-        
+
         const elapsed = (Date.now() - phaseStartTime) / 1000;
-        const progress = Math.min(elapsed / phase.duration, 1);
-        const scale = phase.scaleStart + (phase.scaleEnd - phase.scaleStart) * easeInOutCubic(progress);
-        
-        breathingCircle.style.transform = `scale(${scale})`;
-        outerGlow.style.transform = `scale(${scale * 1.1})`;
-        outerGlow.style.opacity = scale > 1.2 ? 0.8 : 0.5;
-        
+        const progress = Math.min(elapsed / effectivePhase.duration, 1);
+        const eased = applyEasing(progress, effectivePhase.ease);
+        const scale = effectivePhase.scaleStart + (effectivePhase.scaleEnd - effectivePhase.scaleStart) * eased;
+
+        breathingCircle.style.transform = 'scale(' + scale + ')';
+        outerGlow.style.transform = 'scale(' + (scale * 1.08) + ')';
+
+        if (effectivePhase.key === 'inhale') {
+          outerGlow.style.opacity = String(0.4 + progress * 0.42);
+        } else if (effectivePhase.key === 'hold') {
+          outerGlow.style.opacity = '0.62';
+        } else {
+          outerGlow.style.opacity = String(0.72 - progress * 0.34);
+        }
+
         if (progress < 1) {
           animationId = requestAnimationFrame(animate);
+        } else {
+          animationId = null;
         }
       }
-      
-      animate();
-    }
 
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      animationId = requestAnimationFrame(animate);
     }
 
     function tick() {
@@ -443,10 +576,11 @@
         animationId = null;
       }
       
-      breathingCircle.classList.remove('active');
+      breathingCircle.classList.remove('active', 'phase-inhale', 'phase-hold', 'phase-exhale');
+      outerGlow.classList.remove('phase-hold', 'phase-exhale');
       breathingCircle.style.transform = 'scale(1)';
-      outerGlow.style.transform = 'scale(1.1)';
-      outerGlow.style.opacity = '0.5';
+      outerGlow.style.transform = 'scale(1.08)';
+      outerGlow.style.opacity = '0.48';
       
       phaseText.textContent = 'Ready';
       countdown.textContent = '4';
