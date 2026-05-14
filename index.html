@@ -66,11 +66,12 @@
       min-height: 0;
     }
 
-    /* 呼吸圆容器：按视口比例缩放，避免小屏溢出 */
+    /* 呼吸圆容器：布局尺寸须 ≥ 圆环 layout×峰值 scale，否则 transform 放大后会盖住下方控件 */
     .breathing-wrapper {
       position: relative;
-      width: min(72vmin, 280px);
-      height: min(72vmin, 280px);
+      --circle-base: min(46vmin, 180px);
+      width: min(90vmin, max(72vmin, calc(var(--circle-base) * 1.66)), 320px);
+      height: min(90vmin, max(72vmin, calc(var(--circle-base) * 1.66)), 320px);
       flex-shrink: 0;
       overflow: visible;
       display: flex;
@@ -101,8 +102,8 @@
     /* 主呼吸圆：高对比描边 + 深色芯 */
     .breathing-circle {
       position: relative;
-      width: min(46vmin, 180px);
-      height: min(46vmin, 180px);
+      width: var(--circle-base, min(46vmin, 180px));
+      height: var(--circle-base, min(46vmin, 180px));
       border-radius: 50%;
       border: 3px solid rgba(125, 211, 252, 0.92);
       background:
@@ -237,20 +238,28 @@
      * 用 vh 参与限制，让圆环在纵向也占足够比例，接近 PC 端视觉权重。
      */
     @media (max-width: 768px) and (orientation: portrait) {
+      /*
+       * 动画用 transform:scale() 不占布局位；峰值约 1.58 时视觉圆远大于布局框，
+       * 光晕曾用 scale×1.08 会整体 >1.7× 溢出；已改为弱随动 + layout-slot ≥ 圆×1.66。
+       */
       .container {
-        gap: clamp(10px, 2.2vh, 22px);
-        padding: clamp(6px, 1.5vh, 14px) clamp(10px, 3.5vw, 20px);
+        gap: clamp(18px, 4.5vh, 34px);
+        padding: clamp(6px, 1.5vh, 14px) clamp(10px, 3.5vw, 20px)
+          max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
         justify-content: center;
       }
 
       .breathing-wrapper {
-        width: min(92vw, 58vh, 380px);
-        height: min(92vw, 58vh, 380px);
+        --circle-base: min(56vw, 33vh, 208px);
+        --layout-slot: min(94vw, 56vh, calc(var(--circle-base) * 1.66));
+        width: var(--layout-slot);
+        height: var(--layout-slot);
+        margin-bottom: max(16px, calc(var(--layout-slot) * 0.12));
       }
 
       .breathing-circle {
-        width: min(64vw, 40vh, 260px);
-        height: min(64vw, 40vh, 260px);
+        width: var(--circle-base);
+        height: var(--circle-base);
         border-width: max(3px, 0.55vmin);
         box-shadow:
           0 0 0 1px rgba(0, 0, 0, 0.45),
@@ -302,17 +311,20 @@
     @media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
       .container {
         gap: clamp(6px, 1.8vh, 12px);
-        padding: clamp(4px, 1vh, 10px) clamp(10px, 3vw, 16px);
+        padding: clamp(4px, 1vh, 10px) clamp(10px, 3vw, 16px)
+          max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px));
       }
 
       .breathing-wrapper {
-        width: min(44vh, 52vw);
-        height: min(44vh, 52vw);
+        --circle-base: min(30vh, 36vw, 200px);
+        width: min(52vw, 48vh, calc(var(--circle-base) * 1.66));
+        height: min(52vw, 48vh, calc(var(--circle-base) * 1.66));
+        margin-bottom: max(8px, calc(var(--circle-base) * 0.12));
       }
 
       .breathing-circle {
-        width: min(30vh, 36vw);
-        height: min(30vh, 36vw);
+        width: var(--circle-base);
+        height: var(--circle-base);
       }
 
       .countdown {
@@ -329,7 +341,7 @@
       position: fixed;
       left: 50%;
       transform: translateX(-50%);
-      bottom: max(10px, env(safe-area-inset-bottom, 10px));
+      bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 20px));
       font-size: clamp(10px, 2.6vmin, 12px);
       color: rgba(148, 163, 184, 0.75);
       letter-spacing: 0.08em;
@@ -558,6 +570,11 @@
       return t;
     }
 
+    /** 光晕层铺满 wrapper，若与主圆同倍率 scale 会整体 >1.7× 溢出布局；改为弱随动，减少与下方按钮重叠 */
+    function glowTransformScale(breathScale) {
+      return 1 + (breathScale - 1) * 0.5;
+    }
+
     function updateDisplay() {
       const phase = phases[currentPhase];
       phaseText.textContent = phase.name;
@@ -571,7 +588,7 @@
         var eased = applyEasing(Math.min(Math.max(progress, 0), 1), pb.ease);
         var scale = pb.scaleStart + (pb.scaleEnd - pb.scaleStart) * eased;
         breathingCircle.style.transform = 'scale(' + scale + ')';
-        outerGlow.style.transform = 'scale(' + (scale * 1.08) + ')';
+        outerGlow.style.transform = 'scale(' + glowTransformScale(scale) + ')';
         outerGlow.style.opacity = scale > 1.32 ? '0.78' : '0.48';
       }
 
@@ -601,7 +618,7 @@
         const scale = effectivePhase.scaleStart + (effectivePhase.scaleEnd - effectivePhase.scaleStart) * eased;
 
         breathingCircle.style.transform = 'scale(' + scale + ')';
-        outerGlow.style.transform = 'scale(' + (scale * 1.08) + ')';
+        outerGlow.style.transform = 'scale(' + glowTransformScale(scale) + ')';
 
         if (effectivePhase.key === 'inhale') {
           outerGlow.style.opacity = String(0.4 + progress * 0.42);
@@ -671,7 +688,7 @@
       breathingCircle.classList.remove('active', 'phase-inhale', 'phase-hold', 'phase-exhale');
       outerGlow.classList.remove('phase-hold', 'phase-exhale');
       breathingCircle.style.transform = 'scale(1)';
-      outerGlow.style.transform = 'scale(1.08)';
+      outerGlow.style.transform = 'scale(' + glowTransformScale(1) + ')';
       outerGlow.style.opacity = '0.48';
       
       phaseText.textContent = 'Ready';
